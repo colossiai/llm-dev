@@ -135,7 +135,9 @@ Loss 对 b 的导数
 
 ```math
 ∂Loss/∂w
-\\
+```
+
+```math
 ∂Loss/∂b
 ```
 
@@ -151,7 +153,9 @@ Loss 对 b 的导数
 
 ```math
 w = w - lr * dw
-\\
+```
+
+```math
 b = b - lr * db
 ```
 
