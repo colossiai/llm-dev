@@ -218,6 +218,7 @@ if plot:
     axes[2].set_aspect("equal")
 
     plt.tight_layout()
+    # plt.savefig('./plots/17_rope.png')
     plt.show()
 
 
