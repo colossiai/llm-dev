@@ -38,6 +38,11 @@ def main():
     X = np.vstack([X0, X1])
     y = np.hstack([np.zeros(n_per_class), np.ones(n_per_class)])
 
+    # print('X0')
+    # print(X0)
+    # print('X1')
+    # print(X1)
+
     # =========================================================
     # 2. 初始化神经元参数 (故意让初始方向偏离最优, 看训练过程)
     # =========================================================
@@ -93,8 +98,7 @@ def main():
         ax.set_aspect("equal")
 
         plt.tight_layout()
-        path = common.save_fig("01_perceptron")
-        print(f"\n图已保存到 {path}")
+        plt.show()
     else:
         print("\n(未画图。加 --plot 生成 plots/01_perceptron.png)")
 
