@@ -178,7 +178,7 @@ def main():
     #    左图: 一条直线 (线性激活只能这样)
     #    右图: 弯曲的两条线把 XOR 正确分开
     # =========================================================
-    if args.plot:
+    if args.draw:
         fig, axes = plt.subplots(1, 2, figsize=(13, 5.5))
         plot_boundary(axes[0], model_linear, X, y,
                       f"线性激活 (恒等)  acc={acc_lin:.0%}\n→ 只能画直线, 学不会 XOR")
@@ -186,10 +186,9 @@ def main():
                       f"ReLU 激活  acc={acc_relu:.0%}\n→ 能弯曲决策边界, 学会了 XOR")
 
         plt.tight_layout()
-        path = common.save_fig("03_why_nonlinearity")
-        print(f"\n图已保存到 {path}")
+        common.finalize(args, "03_why_nonlinearity")
     else:
-        print("\n(未画图。加 --plot 生成 plots/03_why_nonlinearity.png)")
+        print("\n(未画图。加 --plot 显示图, --save 保存到 plots/)")
 
 
 if __name__ == "__main__":

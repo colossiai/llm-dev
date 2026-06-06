@@ -247,7 +247,7 @@ def main():
     # =========================================================
     # 6. 画 loss 曲线
     # =========================================================
-    if args.plot:
+    if args.draw:
         fig, ax = plt.subplots(figsize=(10, 5))
         ax.plot(losses, color="tab:blue", linewidth=0.8, alpha=0.5, label="原始 loss")
         # 滑动平均让曲线平滑
@@ -266,10 +266,9 @@ def main():
         ax.legend()
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
-        path = common.save_fig("06_train_and_generate")
-        print(f"\n图已保存到 {path}")
+        common.finalize(args, "06_train_and_generate")
     else:
-        print("\n(未画图。加 --plot 生成 plots/06_train_and_generate.png)")
+        print("\n(未画图。加 --plot 显示图, --save 保存到 plots/)")
 
 
 if __name__ == "__main__":

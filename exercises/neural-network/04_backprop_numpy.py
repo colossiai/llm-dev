@@ -190,7 +190,7 @@ def main():
     # =========================================================
     # 5. 可视化: loss 曲线 + 决策边界
     # =========================================================
-    if args.plot:
+    if args.draw:
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5.5))
 
         # Loss 曲线: 用对数刻度 (因为 loss 跨好几个数量级)
@@ -220,10 +220,9 @@ def main():
         ax2.grid(True, alpha=0.3)
 
         plt.tight_layout()
-        path = common.save_fig("04_backprop_numpy")
-        print(f"\n图已保存到 {path}")
+        common.finalize(args, "04_backprop_numpy")
     else:
-        print("\n(未画图。加 --plot 生成 plots/04_backprop_numpy.png)")
+        print("\n(未画图。加 --plot 显示图, --save 保存到 plots/)")
 
 
 if __name__ == "__main__":

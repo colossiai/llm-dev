@@ -115,18 +115,24 @@ exercises/
 ```bash
 cd exercises
 
-# 不画图模式 (跑测试日志)
+# 默认: 不画图 (只跑日志, 最快)
 uv run python neural-network/01_perceptron.py
 
-# 画图模式 (生成 PNG 到 plots/ 子目录)
+# 显示图 (调出 GUI 窗口)
 uv run python neural-network/01_perceptron.py --plot
+
+# 保存图到 plots/ 子目录
+uv run python neural-network/01_perceptron.py --save
+
+# 两个都要 (显示 + 保存)
+uv run python neural-network/01_perceptron.py --plot --save
 ```
 
-依次跑一个目录的全部脚本:
+依次跑一个目录的全部脚本(只保存,不弹窗):
 
 ```bash
 for s in neural-network/0*.py; do
-    uv run python "$s" --plot
+    uv run python "$s" --save
 done
 ```
 

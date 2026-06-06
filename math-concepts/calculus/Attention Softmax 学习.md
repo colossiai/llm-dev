@@ -26,7 +26,9 @@ Softmax   ← 下一步
 
 attention 的核心公式：
 
+```math
 \mathrm{Attention}(Q,K,V)=\mathrm{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+```
 
 你已经理解了前半段：
 
@@ -108,7 +110,9 @@ token A 对三个 token 的关注程度
 
 公式：
 
+```math
 \mathrm{softmax}(x_i)=\frac{e^{x_i}}{\sum_j e^{x_j}}
+```
 
 这里：
 
@@ -288,7 +292,9 @@ QK^T
 
 你提议的方法：
 
+```math
 \frac{x_i}{\sum_j x_j}
+```
 
 得到：
 
@@ -442,7 +448,9 @@ exp 后：
 
 softmax：
 
+```math
 \mathrm{softmax}(x_i)=\frac{e^{x_i}}{\sum_j e^{x_j}}
+```
 
 如果整体加常数：
 

@@ -130,7 +130,7 @@ def main():
     # =========================================================
     # 5. 可视化注意力矩阵 (热图)
     # =========================================================
-    if args.plot:
+    if args.draw:
         fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
         # 左图: 原始打分 (未 softmax)
@@ -167,10 +167,9 @@ def main():
 
         plt.suptitle("Scaled Dot-Product Attention 注意力矩阵", fontsize=14)
         plt.tight_layout()
-        path = common.save_fig("01_attention_scratch", bbox_inches="tight")
-        print(f"\n图已保存到 {path}")
+        common.finalize(args, "01_attention_scratch", bbox_inches="tight")
     else:
-        print("\n(未画图。加 --plot 生成 plots/01_attention_scratch.png)")
+        print("\n(未画图。加 --plot 显示图, --save 保存到 plots/)")
 
 
 if __name__ == "__main__":

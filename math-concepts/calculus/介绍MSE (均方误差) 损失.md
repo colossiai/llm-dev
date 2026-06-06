@@ -48,13 +48,15 @@ error = ŷ - y
 
 # 2. MSE公式
 
-MSE=\frac{1}{N}\sum_{i=1}^{N}(\hat y_i-y_i)^2
+```math
+\mathrm{MSE}=\frac{1}{N}\sum_{i=1}^{N}(\hat y_i-y_i)^2
+```
 
 其中：
 
-* (N)：样本数
-* (y_i)：真实值
-* (\hat y_i)：预测值
+* $(N)$：样本数
+* $(y_i)$：真实值
+* $(\hat y_i)$：预测值
 
 步骤：
 
@@ -223,11 +225,15 @@ L2 Distance Squared
 
 单个样本：
 
+```math
 L=(\hat y-y)^2
+```
 
 对预测值求导：
 
+```math
 \frac{\partial L}{\partial \hat y}=2(\hat y-y)
+```
 
 这个结果非常漂亮：
 
@@ -296,13 +302,13 @@ Forward
 MAE（Mean Absolute Error）：
 
 ```math
-MAE = (1/N) Σ |ŷ-y|
+\mathrm{MAE} = (1/N) Σ |ŷ-y|
 ```
 
 MSE：
 
 ```math
-MSE = (1/N) Σ (ŷ-y)²
+\mathrm{MSE} = (1/N) Σ (ŷ-y)²
 ```
 
 区别：

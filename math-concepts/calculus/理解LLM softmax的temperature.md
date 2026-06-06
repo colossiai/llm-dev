@@ -158,10 +158,9 @@ p = F.softmax(logits / T, dim=-1)
 
 把代码展开：
 
-```python
+
 F.softmax(logits / T)
-= \frac{e^{(z_i / T)}}{\sum_j e^{(z_j / T)}}
-```
+= $\frac{e^{(z_i / T)}}{\sum_j e^{(z_j / T)}}$
 
 这就正好对应数学公式：
 

@@ -193,7 +193,7 @@ def main():
     # =========================================================
     # 4. 可视化: 数据流过 6 层后的"激活分布"
     # =========================================================
-    if args.plot:
+    if args.draw:
         # 重新跑一遍, 收集每层输出
         outputs = [x]
         h = x
@@ -228,10 +228,9 @@ def main():
 
         plt.suptitle(f"6 层 Transformer Block 堆叠 (d={d_model}, heads={n_heads})", fontsize=13)
         plt.tight_layout()
-        path = common.save_fig("04_transformer_block", bbox_inches="tight")
-        print(f"\n图已保存到 {path}")
+        common.finalize(args, "04_transformer_block", bbox_inches="tight")
     else:
-        print("\n(未画图。加 --plot 生成 plots/04_transformer_block.png)")
+        print("\n(未画图。加 --plot 显示图, --save 保存到 plots/)")
 
 
 if __name__ == "__main__":

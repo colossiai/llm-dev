@@ -104,7 +104,6 @@ L(w1,w2)
 \end{bmatrix}
 ```
 
-\nabla L=\begin{bmatrix}\frac{\partial L}{\partial w_1}\\frac{\partial L}{\partial w_2}\end{bmatrix}
 
 这就是梯度。
 
@@ -153,7 +152,9 @@ L(w1,w2)
 
 这就是 Gradient Descent。
 
+```math
 \theta_{new}=\theta-\eta\nabla L
+```
 
 ---
 
@@ -349,7 +350,6 @@ L=f(g(h(...(W))))
 \frac{dg}{dW}
 ```
 
-\frac{dL}{dW}=\frac{dL}{dh}\cdot\frac{dh}{dg}\cdot\frac{dg}{dW}
 
 因此可以从 Loss 一层层往回传。
 

@@ -174,7 +174,7 @@ def main():
     #    上排: epoch 0 / 100 / 400 的决策边界 — 看模型怎么逐步学会月牙形
     #    下排: loss 曲线 + accuracy 曲线 + 实验配置文字总结
     # =========================================================
-    if args.plot:
+    if args.draw:
         fig = plt.figure(figsize=(15, 9))
 
         # ===== 上排 3 图: 3 个阶段的决策边界 =====
@@ -229,10 +229,9 @@ def main():
 
         plt.suptitle("完整 MLP 训练 (nn.Module + Adam + make_moons)", fontsize=14, y=1.00)
         plt.tight_layout()
-        path = common.save_fig("06_mlp_complete", bbox_inches="tight")
-        print(f"\n图已保存到 {path}")
+        common.finalize(args, "06_mlp_complete", bbox_inches="tight")
     else:
-        print("\n(未画图。加 --plot 生成 plots/06_mlp_complete.png)")
+        print("\n(未画图。加 --plot 显示图, --save 保存到 plots/)")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,10 @@
-"""共用工具:matplotlib 中文配置 + --plot 参数解析 + 保存到 plots/ 子目录。"""
+"""共用工具:matplotlib 中文配置 + --plot/--save 参数解析 + 保存到 plots/ 子目录。
+
+参数语义:
+  --plot   生成并显示图 (plt.show())
+  --save   生成并保存图到 plots/ (不显示)
+  两个可以同时用; 都不加时跳过画图。
+"""
 
 import argparse
 from pathlib import Path
@@ -17,13 +23,22 @@ PLOTS_DIR = Path(__file__).parent / "plots"
 
 
 def parse_args(extra=None):
-    """解析命令行参数。extra 可以是一个回调, 接受 parser 添加额外参数。"""
+    """解析命令行参数。extra 可以是一个回调, 接受 parser 添加额外参数。
+
+    args.plot:  显示图 (plt.show)
+    args.save:  保存图到 plots/
+    args.draw:  方便判断"是否需要画图" (= plot or save)
+    """
     p = argparse.ArgumentParser()
     p.add_argument("--plot", action="store_true",
-                   help="生成图片到 plots/ 子目录 (默认不画图)")
+                   help="生成并显示图 (plt.show)")
+    p.add_argument("--save", action="store_true",
+                   help="生成并保存图到 plots/ 子目录")
     if extra is not None:
         extra(p)
-    return p.parse_args()
+    args = p.parse_args()
+    args.draw = args.plot or args.save   # 任一开关都需要构建 figure
+    return args
 
 
 def save_fig(name: str, dpi: int = 120, bbox_inches: str | None = None) -> Path:
@@ -35,3 +50,12 @@ def save_fig(name: str, dpi: int = 120, bbox_inches: str | None = None) -> Path:
         kwargs["bbox_inches"] = bbox_inches
     plt.savefig(path, **kwargs)
     return path
+
+
+def finalize(args, name: str, bbox_inches: str | None = None):
+    """根据 args 处理 figure 的最后一步: save (if --save), show (if --plot)。"""
+    if args.save:
+        path = save_fig(name, bbox_inches=bbox_inches)
+        print(f"图已保存到 {path}")
+    if args.plot:
+        plt.show()

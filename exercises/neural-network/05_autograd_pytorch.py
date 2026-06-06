@@ -207,7 +207,7 @@ def main():
 
     print(f"\nautograd 训练 5000 epoch 后 loss = {losses[-1]:.6f}")
 
-    if args.plot:
+    if args.draw:
         fig, ax = plt.subplots(figsize=(8, 5))
         ax.plot(losses, color="tab:orange", label="autograd 训练 (5000 epoch)")
         ax.set_xlabel("epoch")
@@ -217,10 +217,9 @@ def main():
         ax.grid(True, alpha=0.3)
         ax.legend()
         plt.tight_layout()
-        path = common.save_fig("05_autograd_pytorch")
-        print(f"图已保存到 {path}")
+        common.finalize(args, "05_autograd_pytorch")
     else:
-        print("(未画图。加 --plot 生成 plots/05_autograd_pytorch.png)")
+        print("(未画图。加 --plot 显示图, --save 保存到 plots/)")
 
 
 if __name__ == "__main__":

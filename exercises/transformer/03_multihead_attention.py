@@ -156,7 +156,7 @@ def main():
     # =========================================================
     # 5. 可视化: 4 个头的 attention 并排
     # =========================================================
-    if args.plot:
+    if args.draw:
         fig, axes = plt.subplots(1, n_heads, figsize=(4 * n_heads, 4.5))
 
         for h in range(n_heads):
@@ -182,10 +182,9 @@ def main():
                      f"(d_model={d_model}, head_dim={d_model // n_heads})",
                      fontsize=13)
         plt.tight_layout()
-        path = common.save_fig("03_multihead_attention", bbox_inches="tight")
-        print(f"\n图已保存到 {path}")
+        common.finalize(args, "03_multihead_attention", bbox_inches="tight")
     else:
-        print("\n(未画图。加 --plot 生成 plots/03_multihead_attention.png)")
+        print("\n(未画图。加 --plot 显示图, --save 保存到 plots/)")
 
 
 if __name__ == "__main__":

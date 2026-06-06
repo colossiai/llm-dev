@@ -80,7 +80,7 @@ def main():
     # =========================================================
     # 4. 可视化: 数据 + 决策边界
     # =========================================================
-    if args.plot:
+    if args.draw:
         fig, ax = plt.subplots(figsize=(7, 6))
         ax.scatter(X0[:, 0], X0[:, 1], c="tab:blue", label="类 0", alpha=0.7)
         ax.scatter(X1[:, 0], X1[:, 1], c="tab:red", label="类 1", alpha=0.7)
@@ -98,9 +98,9 @@ def main():
         ax.set_aspect("equal")
 
         plt.tight_layout()
-        plt.show()
+        common.finalize(args, "01_perceptron")
     else:
-        print("\n(未画图。加 --plot 生成 plots/01_perceptron.png)")
+        print("\n(未画图。加 --plot 显示图, --save 保存到 plots/)")
 
 
 if __name__ == "__main__":

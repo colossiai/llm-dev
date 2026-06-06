@@ -145,7 +145,7 @@ def main():
     # 2. 画 6 个子图, 每个 subplot 同时画函数(蓝实线) + 导数(红虚线)
     #    导数 = 0 的区域 → 梯度消失高发区
     # =========================================================
-    if args.plot:
+    if args.draw:
         fig, axes = plt.subplots(2, 3, figsize=(15, 9))
 
         for ax, (name, f, g, note) in zip(axes.flat, funcs):
@@ -160,11 +160,9 @@ def main():
 
         plt.suptitle("常见激活函数及其导数 (蓝=函数, 红虚线=导数)", fontsize=14, y=1.00)
         plt.tight_layout()
-        plt.show()
-        # path = common.save_fig("02_activation_functions", bbox_inches="tight")
-        # print(f"\n图已保存到 {path}")
+        common.finalize(args, "02_activation_functions", bbox_inches="tight")
     else:
-        print("\n(未画图。加 --plot 生成 plots/02_activation_functions.png)")
+        print("\n(未画图。加 --plot 显示图, --save 保存到 plots/)")
 
 
 if __name__ == "__main__":

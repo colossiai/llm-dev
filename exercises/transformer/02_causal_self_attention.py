@@ -141,7 +141,7 @@ def main():
     # =========================================================
     # 4. 可视化: 三张热图并列
     # =========================================================
-    if args.plot:
+    if args.draw:
         fig, axes = plt.subplots(1, 3, figsize=(18, 5.5))
 
         # 左: 因果掩码本身 (下三角 1, 上三角 0)
@@ -184,10 +184,9 @@ def main():
 
         plt.suptitle("因果自注意力 — 为什么需要掩码", fontsize=14)
         plt.tight_layout()
-        path = common.save_fig("02_causal_self_attention", bbox_inches="tight")
-        print(f"\n图已保存到 {path}")
+        common.finalize(args, "02_causal_self_attention", bbox_inches="tight")
     else:
-        print("\n(未画图。加 --plot 生成 plots/02_causal_self_attention.png)")
+        print("\n(未画图。加 --plot 显示图, --save 保存到 plots/)")
 
 
 if __name__ == "__main__":

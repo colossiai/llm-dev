@@ -26,22 +26,28 @@ cd exercises
 # 默认: 不画图 (只打印日志, 跑得快)
 uv run python transformer/01_attention_scratch.py
 
-# 加 --plot: 保存 PNG 到 transformer/plots/
+# 显示图 (GUI 窗口)
 uv run python transformer/01_attention_scratch.py --plot
+
+# 保存到 transformer/plots/
+uv run python transformer/01_attention_scratch.py --save
+
+# 显示 + 保存
+uv run python transformer/01_attention_scratch.py --plot --save
 ```
 
-依次跑全部:
+依次跑全部并保存:
 
 ```bash
 for s in transformer/0*.py; do
-    uv run python "$s" --plot
+    uv run python "$s" --save
 done
 ```
 
 06 还支持自定义训练步数:
 
 ```bash
-uv run python transformer/06_train_and_generate.py --plot --epochs 5000
+uv run python transformer/06_train_and_generate.py --save --epochs 5000
 ```
 
 ---
