@@ -160,8 +160,9 @@ def main():
 
         plt.suptitle("常见激活函数及其导数 (蓝=函数, 红虚线=导数)", fontsize=14, y=1.00)
         plt.tight_layout()
-        path = common.save_fig("02_activation_functions", bbox_inches="tight")
-        print(f"\n图已保存到 {path}")
+        plt.show()
+        # path = common.save_fig("02_activation_functions", bbox_inches="tight")
+        # print(f"\n图已保存到 {path}")
     else:
         print("\n(未画图。加 --plot 生成 plots/02_activation_functions.png)")
 
