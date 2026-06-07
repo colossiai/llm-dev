@@ -82,14 +82,29 @@ def main():
     # =========================================================
     # 1. 造一个小例子: 5 个 token, 每个 token 的 embedding 是 8 维
     # =========================================================
-    T = 5         # 序列长度 (5 个 token)
     d_model = 8   # 每个 token 的 embedding 维度
     d_k = 8       # Q/K 的维度 (这里和 d_model 一样)
 
-    # 模拟 5 个 token 的 embedding (实际场景中来自 embedding 层)
-    tokens = ["The", "cat", "sat", "on", "mat"]
-    X = np.random.randn(T, d_model)
+    # ===== 模拟 embedding lookup =====
+    # 真实 LLM 里 nn.Embedding(vocab_size, d_model) 干的事:
+    #   每个唯一的 token 在 "embedding 表" 里对应一个固定向量
+    #   同一个 token (无论出现在哪个位置) 拿到相同的向量
+    # 这里用 dict 模拟这个查表过程
+    tokens = ["The", "cat", "sat", "on", "the", "mat"]   # 包含重复的 "the"/"The"
+    unique_vocab = sorted(set(t.lower() for t in tokens))
+    embedding_table = {t: np.random.randn(d_model) for t in unique_vocab}
+    # 查表: tokens[i] 对应的向量 → X[i]
+    X = np.array([embedding_table[t.lower()] for t in tokens])
+    T = len(tokens)   # 序列长度由 tokens 决定
+    print(f"词表 (vocab) = {unique_vocab}  ({len(unique_vocab)} 个唯一词)")
+    print(f"输入 tokens = {tokens}  (T={T})")
     print(f"输入 X.shape = {X.shape}  ({T} 个 token, 每个 {d_model} 维)")
+    print("输入 X =")
+    print(X)
+    # 验证: 重复的 token 拿到相同向量
+    # tokens[0]='The' 和 tokens[4]='the' (lower 后都是 'the') 应该 X[0] == X[4]
+    print(f"验证: X[0]({tokens[0]}) == X[4]({tokens[4]}) ?  → "
+          f"{np.allclose(X[0], X[4])} ✓ (同一 token 同一向量)")
 
     # =========================================================
     # 2. 三个投影矩阵 W_Q, W_K, W_V (实际中是可学习的 nn.Linear)
@@ -99,6 +114,8 @@ def main():
     W_K = np.random.randn(d_model, d_k) * 0.5
     W_V = np.random.randn(d_model, d_k) * 0.5
 
+    # X: (T, d_model) @ W_Q (d_model, d_k) → Q: (T, d_k)
+    
     Q = X @ W_Q   # (T, d_k) — "我想找什么"
     K = X @ W_K   # (T, d_k) — "我能提供什么"
     V = X @ W_V   # (T, d_v) — "我真实的内容"

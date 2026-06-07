@@ -115,13 +115,22 @@ def main():
     # =========================================================
     # 1. 造一个 1 batch × 6 token × 32 维的输入
     # =========================================================
-    B, T, d_model = 1, 6, 32
+    B, d_model = 1, 32
     n_heads = 4                # 32 / 4 = 8, 每个头 8 维
-    tokens = ["The", "cat", "sat", "on", "the", "mat"]
 
-    x = torch.randn(B, T, d_model)
+    # ===== 模拟 embedding lookup (同 01/02 脚本) =====
+    tokens = ["The", "cat", "sat", "on", "the", "mat"]
+    T = len(tokens)
+    unique_vocab = sorted(set(t.lower() for t in tokens))
+    embedding_table = {t: torch.randn(d_model) for t in unique_vocab}
+    x = torch.stack([embedding_table[t.lower()] for t in tokens]).unsqueeze(0)  # (B=1, T, d)
+
+    print(f"词表 = {unique_vocab}  ({len(unique_vocab)} 个唯一词)")
+    print(f"tokens = {tokens}  (T={T})")
     print(f"输入 x.shape = {tuple(x.shape)}")
     print(f"d_model = {d_model}, n_heads = {n_heads}, head_dim = {d_model // n_heads}")
+    print(f"验证: x[0,0]({tokens[0]}) == x[0,4]({tokens[4]}) ?  → "
+          f"{torch.allclose(x[0, 0], x[0, 4])} ✓")
 
     # =========================================================
     # 2. 跑 Multi-Head Attention

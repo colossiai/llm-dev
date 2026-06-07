@@ -97,10 +97,26 @@ def main():
     # =========================================================
     # 1. 造一个序列: 6 个 token, embedding 维度 16
     # =========================================================
-    B, T, d_model = 1, 6, 16
-    tokens = ["The", "cat", "sat", "on", "the", "mat"]
-    x = torch.randn(B, T, d_model)
+    B, d_model = 1, 16
+
+    # ===== 模拟 embedding lookup =====
+    # 真实 LLM 用 nn.Embedding(vocab_size, d_model), 这里用 dict 模拟。
+    # 关键: 同一个 token (大小写归一后) 必须拿到同一个向量
+    tokens = ["The", "cat", "sat", "on", "the", "mat"]   # "The" 和 "the" 应该一样
+    T = len(tokens)
+    unique_vocab = sorted(set(t.lower() for t in tokens))
+    # 用 torch.randn 给词表里每个唯一 token 生成一个固定 embedding
+    embedding_table = {t: torch.randn(d_model) for t in unique_vocab}
+    # 查表: 拼成 (T, d_model), 再加 batch 维度
+    x_2d = torch.stack([embedding_table[t.lower()] for t in tokens])  # (T, d_model)
+    x = x_2d.unsqueeze(0)   # (B=1, T, d_model)
+
+    print(f"词表 (vocab) = {unique_vocab}  ({len(unique_vocab)} 个唯一词)")
+    print(f"输入 tokens = {tokens}  (T={T})")
     print(f"输入 x.shape = {tuple(x.shape)}  ({B} batch, {T} 个 token, {d_model} 维)")
+    # 验证: "The" 和 "the" 经过 lower() 都是 "the", 拿同一向量
+    print(f"验证: x[0,0]({tokens[0]}) == x[0,4]({tokens[4]}) ?  → "
+          f"{torch.allclose(x[0, 0], x[0, 4])} ✓ (同一 token 同一向量)")
 
     # =========================================================
     # 2. 同时跑"有掩码"和"无掩码"两次, 对比注意力分布

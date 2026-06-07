@@ -18,6 +18,30 @@
 
 ---
 
+## 输入设计(每个脚本如何造输入张量)
+
+不同脚本根据**教学重点**选择不同的输入方式 — 是否要把 `tokens` 标签和输入张量真正"关联"起来。
+
+| 脚本 | 输入来源 | 教学重点 | 验证 |
+|------|---------|---------|------|
+| **01** | tokens → numpy embedding lookup | Attention 公式本身 | "The" 和 "the" 拿同向量 |
+| **02** | tokens → torch embedding lookup | 因果掩码作用 | 同上 + 掩码切断未来 |
+| **03** | tokens → torch embedding lookup | 多头并行 | 不同头学不同模式 |
+| **04** | **纯随机张量(故意的)** | 形状不变 + 激活稳定 | 6 层后 std 仍 ~1 |
+| **05** | 真实 token id + `nn.Embedding` | 完整 GPT 架构 | 213K 参数, shape 全对 |
+| **06** | char-level token + 真实训练 | 端到端训练 + 生成 | 从 prompt 续写训练文本 |
+
+**为什么 01/02/03 用 embedding lookup,04 用随机张量?**
+
+- 01/02/03 演示**注意力模式**:相同 token 应该产生相同的注意力行为 — 必须用 lookup 保证一致
+- 04 演示**形状/数值性质**:任何输入都不应改变形状, 激活分布应稳定 — 随机张量足够
+- 05 是**真正的 LLM 架构**:用 `nn.Embedding(vocab_size, d_model)` 学习 token 表示
+- 06 是**真训练**:char-level 分词 + cross-entropy + Adam 完整训练
+
+→ **设计意图**:让读者看出"什么时候关心语义,什么时候只关心数值"。
+
+---
+
 ## 运行方式
 
 ```bash
