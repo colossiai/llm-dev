@@ -17,45 +17,23 @@
   3. Retrieval   用户问问题时, 找出最相关的几块
   4. Generation  把这几块作为"上下文"喂给 LLM, 让它基于上下文回答
 
-【数据流】
-                                         ┌──────────┐
-   文档库 ──切块──> chunks ──编码──> vectors          │
-                                                    │
-                                              vector DB
-                                                    │
-   用户问题 ──编码──> query vector ──相似度检索─────┘
-                                          │
-                                          ▼
-                                    top-k 相关 chunks
-                                          │
-                                          ▼
-                                   填入 prompt 模板
-                                          │
-                                          ▼
-                                        LLM
-                                          │
-                                          ▼
-                                   "基于上下文的回答"
-
-【本 demo 的极简实现】
-  - 文档:7 段 2026 年的金融 AI 假数据 (LLM 训练数据里没有)
-  - Embedding:sentence-transformers 多语言模型 (~100MB)
-  - 向量库:numpy 数组 + cosine similarity (不用 Milvus 等专业 DB)
-  - LLM:OpenAI 兼容 API (DeepSeek/Moonshot/Ollama 都行); 没配则跳过
+【两种 embedding 模式】
+  默认 (TF-IDF):    用 sklearn, 零下载, 立即跑, 适合 demo
+  --neural:         用 sentence-transformers, 效果更好, 需下载 ~480MB 模型
 
 【运行】
   uv sync
-  uv run python rag_demo.py        # 不调用 LLM, 只看检索结果
-  uv run python rag_demo.py --llm  # 调用 LLM (需要先在 .env 配 API)
+  uv run python rag_demo.py                  # TF-IDF, 不调 LLM
+  uv run python rag_demo.py --neural         # 神经 embedding, 不调 LLM
+  uv run python rag_demo.py --llm            # TF-IDF + LLM (需 .env)
+  uv run python rag_demo.py --neural --llm   # 神经 embedding + LLM
 """
 
 import argparse
 import os
-import sys
 from pathlib import Path
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
 
 # =============================================================
@@ -86,58 +64,96 @@ DOCS = [
 
 
 # =============================================================
-# 2. RAG 的核心组件 — 用 numpy + sentence-transformers 实现
+# 2. Embedding 后端 — 两种选择
+# =============================================================
+
+class TfidfEmbedder:
+    """TF-IDF embedding: 经典方案, 零下载, 适合 demo。
+
+    工作原理:
+      - TF (Term Frequency): 词在文档里出现的频率
+      - IDF (Inverse Document Frequency): 词的稀有度 (常见词降权)
+      - 文档向量 = TF * IDF (维度 = 词表大小)
+    缺点: 不懂语义(同义词识别不了)。
+    优点: 立即可用, 对短文档+关键词查询效果不错。
+    """
+
+    def __init__(self):
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        # 中文按字切 (analyzer="char_wb"), 因为没有中文分词器
+        # ngram_range=(2,3) 抓 2-3 字组合, 兼顾"词"和"短语"
+        self.vec = TfidfVectorizer(
+            analyzer="char_wb",
+            ngram_range=(2, 3),
+        )
+
+    def encode_docs(self, docs):
+        # fit_transform: 学习词表 + 编码
+        mat = self.vec.fit_transform(docs).toarray().astype(np.float32)
+        # 归一化让 cosine similarity = 点积
+        norms = np.linalg.norm(mat, axis=1, keepdims=True)
+        norms[norms == 0] = 1
+        return mat / norms
+
+    def encode_query(self, query):
+        # transform: 不重新学词表, 用已有词表编码
+        vec = self.vec.transform([query]).toarray()[0].astype(np.float32)
+        n = np.linalg.norm(vec)
+        return vec / n if n > 0 else vec
+
+    def name(self):
+        return "TF-IDF (sklearn)"
+
+
+class NeuralEmbedder:
+    """sentence-transformers embedding: 现代方案, 懂语义。"""
+
+    def __init__(self, model_name="paraphrase-multilingual-MiniLM-L12-v2"):
+        from sentence_transformers import SentenceTransformer
+        print(f"[加载 embedding 模型: {model_name}]")
+        print("  第一次跑会下载 ~480MB, 后续从缓存读")
+        print("  如果下载失败 (SSL/网络): 用默认 TF-IDF 模式 (不加 --neural)")
+        self.encoder = SentenceTransformer(model_name)
+        self.model_name = model_name
+
+    def encode_docs(self, docs):
+        return self.encoder.encode(docs, show_progress_bar=False,
+                                    normalize_embeddings=True)
+
+    def encode_query(self, query):
+        return self.encoder.encode([query], normalize_embeddings=True)[0]
+
+    def name(self):
+        return f"sentence-transformers ({self.model_name})"
+
+
+# =============================================================
+# 3. RAG 核心
 # =============================================================
 
 class MinimalRAG:
-    """50 行代码实现 RAG 核心逻辑。"""
-
-    def __init__(self, model_name: str = "paraphrase-multilingual-MiniLM-L12-v2"):
-        # 加载 embedding 模型 (第一次运行会下载 ~480MB)
-        # 备选 (中文更好但 1.5GB):  BAAI/bge-large-zh-v1.5
-        # 备选 (英文最小 80MB):    all-MiniLM-L6-v2
-        print(f"[加载 embedding 模型: {model_name}]")
-        self.encoder = SentenceTransformer(model_name)
+    def __init__(self, embedder):
+        self.embedder = embedder
         self.docs: list[str] = []
         self.doc_vectors: np.ndarray | None = None
 
-    def add_docs(self, docs: list[str]):
-        """把文档库编码成向量, 存进内存。
-
-        生产环境会换成 Milvus / Qdrant / pgvector, 但原理一样:
-        - 编码: 文档 → 768/1024 维向量
-        - 存储: 向量索引以便快速检索
-        """
+    def add_docs(self, docs):
         self.docs = docs
-        # encode 返回 shape (N, dim) 的 numpy 数组
-        # normalize_embeddings=True 让所有向量长度为 1, 后续点积 = cosine similarity
-        self.doc_vectors = self.encoder.encode(
-            docs,
-            show_progress_bar=False,
-            normalize_embeddings=True,
-        )
+        self.doc_vectors = self.embedder.encode_docs(docs)
         print(f"[已编码 {len(docs)} 个文档, 向量维度 = {self.doc_vectors.shape[1]}]")
 
-    def retrieve(self, query: str, top_k: int = 3) -> list[tuple[float, str]]:
-        """检索最相关的 top_k 个文档。
-
-        步骤:
-          1. 把 query 也编码成向量
-          2. 算 query 和每个文档的 cosine similarity
-          3. 取相似度最高的 top_k 个
+    def retrieve(self, query, top_k=3):
+        """三行核心检索逻辑:
+          1. query → 向量
+          2. 点积算相似度 (cosine, 因已归一化)
+          3. 取 top-k
         """
-        # query → 向量 (1, dim)
-        q_vec = self.encoder.encode([query], normalize_embeddings=True)[0]
-
-        # cosine similarity = 点积 (因为都归一化了)
-        # (N, dim) @ (dim,) = (N,) — 每个文档对 query 的相似度
+        q_vec = self.embedder.encode_query(query)
         scores = self.doc_vectors @ q_vec
-
-        # 取 top_k (argsort 默认升序, 取后 k 个倒过来)
         top_idx = np.argsort(scores)[::-1][:top_k]
         return [(float(scores[i]), self.docs[i]) for i in top_idx]
 
-    def build_prompt(self, query: str, retrieved: list[tuple[float, str]]) -> str:
+    def build_prompt(self, query, retrieved):
         """把检索到的上下文塞进 prompt — RAG 的"装配"步骤。"""
         context_block = "\n\n".join(f"[文档 {i+1}] {doc}"
                                      for i, (_, doc) in enumerate(retrieved))
@@ -153,37 +169,30 @@ class MinimalRAG:
 
 
 # =============================================================
-# 3. 可选: 调用 LLM (兼容 OpenAI API 格式)
+# 4. 可选 LLM 调用 (OpenAI 兼容 API)
 # =============================================================
 
-def call_llm(prompt: str) -> str:
-    """调用 OpenAI 兼容的 LLM API (DeepSeek / Moonshot / OpenAI / Ollama 都可)。
-
-    通过环境变量配置 (见 .env.example):
-      LLM_API_KEY    API key
-      LLM_BASE_URL   端点 (例: https://api.deepseek.com/v1)
-      LLM_MODEL      模型名 (例: deepseek-chat)
-    """
+def call_llm(prompt):
     try:
         from openai import OpenAI
     except ImportError:
         return "[错误] 未安装 openai, 跑 uv sync 装一下"
 
     api_key = os.getenv("LLM_API_KEY")
-    base_url = os.getenv("LLM_BASE_URL")
+    if not api_key or api_key.startswith("sk-xxxx"):
+        return ("[未配 LLM_API_KEY]\n"
+                "  cp .env.example .env, 然后填上 API key (DeepSeek/Moonshot/...)")
+
+    client = OpenAI(
+        api_key=api_key,
+        base_url=os.getenv("LLM_BASE_URL"),
+    )
     model = os.getenv("LLM_MODEL", "deepseek-chat")
-
-    if not api_key:
-        return ("[未配 LLM_API_KEY, 跳过 LLM 调用]\n"
-                "  设置方法: cp .env.example .env, 然后填上 API key\n"
-                "  例如使用 DeepSeek: 在 https://platform.deepseek.com 注册拿 key")
-
-    client = OpenAI(api_key=api_key, base_url=base_url)
     try:
         resp = client.chat.completions.create(
             model=model,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.1,   # 低温度让 LLM 严格基于上下文
+            temperature=0.1,
         )
         return resp.choices[0].message.content
     except Exception as e:
@@ -191,18 +200,10 @@ def call_llm(prompt: str) -> str:
 
 
 # =============================================================
-# 4. Demo 主流程
+# 5. 主流程
 # =============================================================
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--llm", action="store_true",
-                        help="调用 LLM 生成最终回答 (需要先配 .env)")
-    parser.add_argument("--top-k", type=int, default=3,
-                        help="检索时取前 K 个相关文档 (默认 3)")
-    args = parser.parse_args()
-
-    # 加载 .env (如果有)
+def load_env():
     env_path = Path(__file__).parent / ".env"
     if env_path.exists():
         for line in env_path.read_text().splitlines():
@@ -211,11 +212,25 @@ def main():
                 k, v = line.split("=", 1)
                 os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
-    # === 初始化 RAG ===
-    rag = MinimalRAG()
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--neural", action="store_true",
+                        help="使用 sentence-transformers (默认 TF-IDF, 零下载)")
+    parser.add_argument("--llm", action="store_true",
+                        help="调用 LLM 生成最终回答 (需要 .env)")
+    parser.add_argument("--top-k", type=int, default=3)
+    args = parser.parse_args()
+
+    load_env()
+
+    # === 选择 embedding 后端 ===
+    embedder = NeuralEmbedder() if args.neural else TfidfEmbedder()
+    print(f"[使用 embedding: {embedder.name()}]")
+
+    rag = MinimalRAG(embedder)
     rag.add_docs(DOCS)
 
-    # === 3 个测试 query (这些答案在 LLM 训练数据里都没有) ===
     queries = [
         "蚂蚁集团 2026 年 AI 投入金额是多少, 重点投向哪里?",
         "为什么中国金融大模型几乎都是私有部署?",
@@ -227,24 +242,18 @@ def main():
         print(f"问题: {q}")
         print("=" * 70)
 
-        # --- 步骤 1: 检索 ---
         retrieved = rag.retrieve(q, top_k=args.top_k)
         print(f"\n[检索结果] top-{args.top_k} (按相似度排序):")
         for i, (score, doc) in enumerate(retrieved):
             print(f"  #{i+1}  score={score:.4f}")
             print(f"        {doc[:80]}...")
 
-        # --- 步骤 2: 装配 prompt ---
-        prompt = rag.build_prompt(q, retrieved)
-
-        # --- 步骤 3: LLM 生成 (可选) ---
         if args.llm:
+            prompt = rag.build_prompt(q, retrieved)
             print(f"\n[LLM 回答]")
-            answer = call_llm(prompt)
-            print(answer)
+            print(call_llm(prompt))
         else:
-            print(f"\n[未启用 LLM 调用] 加 --llm 参数让 LLM 基于上下文生成回答")
-
+            print(f"\n[未启用 LLM] 加 --llm 让 LLM 基于上下文回答")
         print()
 
 

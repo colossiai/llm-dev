@@ -1,7 +1,7 @@
 # 最小化 RAG Demo
 
-50 行核心代码看清 RAG (Retrieval-Augmented Generation) 全流程。
-单文件、无数据库依赖、可选 LLM 调用。
+200 行核心代码看清 RAG (Retrieval-Augmented Generation) 全流程。
+**默认零模型下载, 立即可跑**;可选升级到神经 embedding + LLM 调用。
 
 ---
 
@@ -41,47 +41,53 @@ LLM (GPT/Qwen/DeepSeek) 训练数据有截止日期, **不知道**:
                                    "基于上下文的回答"
 ```
 
-1. **Chunking** — 把文档切成小块
-2. **Embedding** — 把每块转成向量
-3. **Retrieval** — 用户问问题时, 找最相关的几块
-4. **Generation** — 把这几块作为"上下文"喂给 LLM 生成回答
+| 步骤 | 名字 | 本 demo 做的 |
+|------|------|-------------|
+| 1 | Chunking | 文档已经是块 (没切) |
+| 2 | Embedding | TF-IDF 或 sentence-transformers |
+| 3 | Retrieval | numpy 点积 + top-k |
+| 4 | Generation | 装配 prompt + OpenAI 兼容 API (可选) |
 
 ---
 
-## 本 demo 的极简实现
+## 极简实现
 
 | 组件 | 选择 | 理由 |
 |------|------|------|
-| 文档库 | 7 段假数据 (内嵌 Python list) | 不需要文件 IO |
-| Embedding | `sentence-transformers` 多语言模型 | 一行调用, 100MB |
+| 文档库 | 7 段假数据 (2026 年的, LLM 不可能见过) | 不需要文件 IO |
+| Embedding | **TF-IDF (默认)** 或 sentence-transformers | TF-IDF 零下载 |
 | 向量 DB | `numpy` 数组 + cosine 相似度 | 不需要 Milvus |
 | LLM | OpenAI 兼容 API (可选) | 支持 DeepSeek/Moonshot/Ollama |
-
-**关键文件**:`rag_demo.py` (200 行, 一半是注释)
 
 ---
 
 ## 快速开始
 
-### 1. 安装依赖
+### 1. 安装(默认依赖, 不需联网下载 AI 模型)
 
 ```bash
 cd rag/minimal-demo
 uv sync
 ```
 
-第一次跑会下载 embedding 模型(约 480MB),后续从本地缓存读。
-
-### 2. 不调 LLM, 只看检索
+### 2. 跑 demo (默认 TF-IDF + 不调 LLM)
 
 ```bash
 uv run python rag_demo.py
 ```
 
-会输出 3 个测试问题的检索结果(top-3 相关文档 + 相似度分数),
-最后告诉你"加 `--llm` 让 LLM 基于这些文档回答"。
+→ **3 秒内出结果**, 看到每个问题的 top-3 相关文档和相似度分数。
 
-### 3. 调 LLM 生成回答
+### 3. 升级到神经 embedding
+
+```bash
+uv sync --extra neural    # 装 sentence-transformers + torch (~2GB)
+uv run python rag_demo.py --neural
+```
+
+第一次跑会下载 ~480MB 模型(可能需要科学上网或用 HF 镜像)。
+
+### 4. 调 LLM 生成回答
 
 复制配置模板:
 
@@ -90,7 +96,7 @@ cp .env.example .env
 # 编辑 .env, 填入你的 API key
 ```
 
-推荐 **DeepSeek**(中国友好,便宜):
+推荐 **DeepSeek**(国内友好,便宜):
 
 ```
 LLM_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
@@ -98,74 +104,87 @@ LLM_BASE_URL=https://api.deepseek.com/v1
 LLM_MODEL=deepseek-chat
 ```
 
-然后跑:
+然后:
 
 ```bash
-uv run python rag_demo.py --llm
+uv run python rag_demo.py --llm                # TF-IDF + LLM
+uv run python rag_demo.py --neural --llm       # 神经 embedding + LLM
 ```
 
 ---
 
-## 期望输出 (无 LLM 模式)
+## 验证过的输出 (默认 TF-IDF, 无 LLM)
 
 ```
-[加载 embedding 模型: paraphrase-multilingual-MiniLM-L12-v2]
-[已编码 7 个文档, 向量维度 = 384]
+[使用 embedding: TF-IDF (sklearn)]
+[已编码 7 个文档, 向量维度 = 1108]
 ======================================================================
 问题: 蚂蚁集团 2026 年 AI 投入金额是多少, 重点投向哪里?
 ======================================================================
 
 [检索结果] top-3 (按相似度排序):
-  #1  score=0.7245
-        2026 Q1 蚂蚁集团 AI 战略报告: 公司计划投入 50 亿元用于金融大模型...
-  #2  score=0.3812
-        中国金融行业 2026 年大模型私有部署率达到 92%, 主要受三个因素驱动...
-  #3  score=0.3501
-        FinGPT 是哥伦比亚大学维护的开源金融大模型项目...
+  #1  score=0.4370
+        2026 Q1 蚂蚁集团 AI 战略报告: 公司计划投入 50 亿元用于金融大模型研发...
+  #2  score=0.0969
+        中国人民银行 2026 年 3 月发布《金融业人工智能应用监管指引(2026)》...
+  #3  score=0.0546
+        招商银行私募基金部 2026 年部署内部 RAG 系统...
 
-[未启用 LLM 调用] 加 --llm 参数让 LLM 基于上下文生成回答
+问题: 为什么中国金融大模型几乎都是私有部署?
+  #1  score=0.2479
+        中国金融行业 2026 年大模型私有部署率达到 92%, 主要受三个因素驱动...
+
+问题: DeepSeek 在金融评测上的表现如何?
+  #1  score=0.3373
+        DeepSeek-V3.5 模型在金融问答 benchmark CFinBench 2026 上达到 89.2%...
 ```
 
-→ **可以看到 #1 是真正相关的, 相似度 0.72; 其他两个明显不相关 (~0.35)**
+→ **每个问题的 top-1 都是真正相关的文档,top-2/3 明显较低,说明检索区分度好。**
 
 ---
 
-## 期望输出 (调 LLM 后)
+## TF-IDF vs 神经 embedding 对比
 
-```
-问题: 蚂蚁集团 2026 年 AI 投入金额是多少, 重点投向哪里?
-...
-[LLM 回答]
-蚂蚁集团 2026 年计划投入 50 亿元用于金融大模型研发, 重点投向反欺诈和
-智能投顾两个方向, 预计 2027 年完成内部推广。
-```
+| | TF-IDF | sentence-transformers |
+|---|--------|----------------------|
+| 模型下载 | 0 (零) | ~480MB |
+| 启动速度 | 立即 | 几秒 |
+| 懂同义词 | ❌ 不懂 | ✅ 懂 |
+| 懂跨语言 | ❌ 不懂 | ✅ 多语言 |
+| 适合 demo | ✓ 适合 | 也适合 |
+| 适合生产 | 部分场景 (混合检索的关键词部分) | 主流方案 |
 
-→ LLM 准确复述了文档内容, 不再瞎编。
-
-**关键验证**:这些 2026 年的"假数据"是 LLM 训练时不可能见过的。
-如果不用 RAG 直接问 LLM, 它要么说"不知道",要么瞎编一个金额。
-**这就是 RAG 的价值。**
+→ **本 demo 默认 TF-IDF 是为了"开箱即跑";真实项目用神经 embedding 或两者结合。**
 
 ---
 
 ## 关键代码段速览
 
-### Embedding (编码)
+### TF-IDF Embedding(默认,零下载)
 
 ```python
-self.encoder = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-self.doc_vectors = self.encoder.encode(docs, normalize_embeddings=True)
+from sklearn.feature_extraction.text import TfidfVectorizer
+vec = TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 3))
+doc_vectors = vec.fit_transform(docs).toarray()
 ```
 
-### Retrieval (检索 — 核心 3 行)
+### 神经 Embedding(可选升级)
 
 ```python
-q_vec = self.encoder.encode([query], normalize_embeddings=True)[0]
-scores = self.doc_vectors @ q_vec   # cosine similarity (因为已归一化)
+from sentence_transformers import SentenceTransformer
+encoder = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+doc_vectors = encoder.encode(docs, normalize_embeddings=True)
+```
+
+### Retrieval(检索 — 核心 3 行,两种 embedding 都一样)
+
+```python
+q_vec = encode(query)
+scores = doc_vectors @ q_vec   # cosine 相似度
 top_idx = np.argsort(scores)[::-1][:top_k]
 ```
 
-### Prompt 装配
+### Prompt 装配(RAG 的"魂"在这里)
 
 ```python
 prompt = f"""请基于以下文档回答问题。如果文档里没有相关信息, 回答"未提及"。
@@ -177,7 +196,7 @@ prompt = f"""请基于以下文档回答问题。如果文档里没有相关信�
 回答:"""
 ```
 
-→ **这就是 RAG 的全部核心。** 其他都是工程细节(更好的 chunking、更大的模型、向量 DB)。
+→ **这就是 RAG 的全部核心。** 其他都是工程细节(更好的 chunking、更大的模型、向量 DB、reranker)。
 
 ---
 
@@ -185,8 +204,8 @@ prompt = f"""请基于以下文档回答问题。如果文档里没有相关信�
 
 | 阶段 | demo 做的 | 生产应该做的 |
 |------|----------|-------------|
-| Chunking | 无 (文档本身就是一块) | 按段落/语义切, 处理 PDF/Word |
-| Embedding | sentence-transformers 小模型 | BGE-large / OpenAI text-embedding-3-large |
+| Chunking | 无 (文档本身就是一块) | 按段落/语义切, 处理 PDF/Word/HTML |
+| Embedding | TF-IDF / MiniLM-L12 | BGE-large / OpenAI text-embedding-3-large |
 | 向量 DB | numpy 数组 | Milvus / Qdrant / pgvector |
 | 检索 | 纯向量相似度 | 混合检索 (向量 + BM25 + reranker) |
 | Prompt | 简单拼接 | 系统提示、few-shot、citation |
