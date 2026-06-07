@@ -80,12 +80,26 @@ uv run python rag_demo.py
 
 ### 3. 升级到神经 embedding
 
+提供两个 pyproject 版本(默认是 pinned,适配你当前 macOS):
+
+| 文件 | 用于 | torch 版本 |
+|------|------|----------|
+| `pyproject.pinned.toml` (默认 `pyproject.toml`) | macOS x86_64 (Intel Mac) | `==2.2.2` |
+| `pyproject.latest.toml` | Linux / arm64 Mac (M1+) / Windows | `>=2.4` |
+
+切换版本:
+
 ```bash
-uv sync --extra neural    # 装 sentence-transformers + torch (~2GB)
+./use-version.sh pinned   # 当前 Mac
+./use-version.sh latest   # 其他机器 (Linux、M1/M2 Mac、Windows)
+
+# 然后:
+rm -rf .venv uv.lock
+uv sync --extra neural
 uv run python rag_demo.py --neural
 ```
 
-第一次跑会下载 ~480MB 模型(可能需要科学上网或用 HF 镜像)。
+第一次跑会下载 ~480MB embedding 模型(可能需要科学上网或用 HF 镜像)。
 
 ### 4. 调 LLM 生成回答
 
