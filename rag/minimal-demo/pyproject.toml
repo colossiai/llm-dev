@@ -1,0 +1,13 @@
+[project]
+name = "rag-minimal-demo"
+version = "0.1.0"
+description = "最小化 RAG demo - 50 行代码看清 retrieval-augmented generation 全流程"
+requires-python = ">=3.10"
+dependencies = [
+    # 这些版本兼容 torch 2.2.2 (macOS x86_64 最高可用版本)
+    "sentence-transformers>=2.7,<3.5",
+    "transformers>=4.40,<5",
+    "torch==2.2.2",
+    "numpy<2",
+    "openai>=1.30",
+]

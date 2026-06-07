@@ -1,0 +1,2 @@
+  - user profile — 金融系统研发工程师 + 学完 LLM 原理 + AI+金融工程化方向
+  - explanation style — 偏好"直觉 → 表格 → 类比 → 一句话总结"的讲解风格
