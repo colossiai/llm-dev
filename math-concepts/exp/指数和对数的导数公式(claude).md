@@ -19,7 +19,7 @@
 
 **记忆口诀**：
 - 指数求导：**自己 × ln(底数)**，所以 $e^x$ 因为 $\ln e = 1$，导数还是自己
-- 对数求导：**$\dfrac{1}{x \times \ln(底数)}$**，所以 $\ln x$ 因为 $\ln e = 1$，导数是 $\dfrac{1}{x}$
+- 对数求导：**$\dfrac{1}{x \cdot \ln a}$**（$a$ 为底数），所以 $\ln x$ 因为 $\ln e = 1$，导数是 $\dfrac{1}{x}$
 
 > **直觉**：底数为 $e$ 时一切都最简单，这就是为什么数学和深度学习都偏爱 $e$。
 
@@ -29,9 +29,9 @@
 
 $e \approx 2.71828\ldots$，它的定义是：
 
-$$
+```math
 e = \lim_{n \to \infty} \left(1 + \frac{1}{n}\right)^n
-$$
+```
 
 **类比（银行复利）**：
 - 你存 1 元，年利率 100%，一年后变 2 元
@@ -41,9 +41,9 @@ $$
 
 **关键性质**（这个就是后面所有推导的核心）：
 
-$$
+```math
 \lim_{h \to 0} \frac{e^h - 1}{h} = 1
-$$
+```
 
 > 直觉：当 $h$ 非常小时，$e^h \approx 1 + h$，所以 $\dfrac{e^h - 1}{h} \approx \dfrac{h}{h} = 1$。 (gpt: 这是Taylor展开)
 
@@ -55,37 +55,37 @@ $$
 
 导数的定义是：
 
-$$
+```math
 f'(x) = \lim_{h \to 0} \frac{f(x+h) - f(x)}{h}
-$$
+```
 
 代入 $f(x) = e^x$：
 
-$$
+```math
 (e^x)' = \lim_{h \to 0} \frac{e^{x+h} - e^x}{h}
-$$
+```
 
 ### 把 $e^x$ 提出来
 
 利用指数法则 $e^{x+h} = e^x \cdot e^h$：
 
-$$
+```math
 = \lim_{h \to 0} \frac{e^x \cdot e^h - e^x}{h} = \lim_{h \to 0} \frac{e^x(e^h - 1)}{h}
-$$
+```
 
 由于 $e^x$ 不含 $h$，可以提到极限符号外面：
 
-$$
+```math
 = e^x \cdot \lim_{h \to 0} \frac{e^h - 1}{h}
-$$
+```
 
 ### 使用关键性质
 
 前面说过 $\lim_{h \to 0} \dfrac{e^h - 1}{h} = 1$，所以：
 
-$$
+```math
 \boxed{(e^x)' = e^x \cdot 1 = e^x}
-$$
+```
 
 > **一句话**：$e^x$ 是唯一一个"导数等于自己"的函数（不算常数 0），这就是它的魔法。
 
@@ -97,9 +97,9 @@ $$
 
 任何 $a^x$ 都可以写成 $e^{\text{something}}$：
 
-$$
+```math
 a^x = e^{\ln(a^x)} = e^{x \ln a}
-$$
+```
 
 > 类比：就像把"美元"换算成"人民币"再计算，所有指数都先翻译成"$e$ 语言"。
 
@@ -107,15 +107,15 @@ $$
 
 设 $u = x \ln a$，则 $a^x = e^u$，应用链式法则：
 
-$$
+```math
 (a^x)' = (e^u)' = e^u \cdot u'
-$$
+```
 
 其中 $u' = \ln a$（因为 $\ln a$ 是常数），$e^u = e^{x \ln a} = a^x$，所以：
 
-$$
+```math
 \boxed{(a^x)' = a^x \cdot \ln a}
-$$
+```
 
 ### 验证
 
@@ -129,27 +129,27 @@ $$
 
 $y = \ln x$ 等价于 $x = e^y$，两边对 $x$ 求导：
 
-$$
+```math
 \frac{d}{dx}(x) = \frac{d}{dx}(e^y)
-$$
+```
 
 左边 $= 1$，右边用链式法则：
 
-$$
+```math
 1 = e^y \cdot \frac{dy}{dx}
-$$
+```
 
 解出 $\dfrac{dy}{dx}$：
 
-$$
+```math
 \frac{dy}{dx} = \frac{1}{e^y} = \frac{1}{x}
-$$
+```
 
 （因为 $e^y = x$）
 
-$$
+```math
 \boxed{(\ln x)' = \frac{1}{x}}
-$$
+```
 
 > **直觉**：$\ln x$ 增长得越来越慢（$x$ 越大，函数曲线越平），所以导数（斜率）随 $x$ 增大而减小，正好就是 $\dfrac{1}{x}$。
 
@@ -159,19 +159,19 @@ $$
 
 ### 技巧：换底公式
 
-$$
+```math
 \log_a x = \frac{\ln x}{\ln a}
-$$
+```
 
 由于 $\ln a$ 是常数，求导时直接提出来：
 
-$$
+```math
 (\log_a x)' = \frac{1}{\ln a} \cdot (\ln x)' = \frac{1}{\ln a} \cdot \frac{1}{x}
-$$
+```
 
-$$
+```math
 \boxed{(\log_a x)' = \frac{1}{x \ln a}}
-$$
+```
 
 ### 验证
 
@@ -207,23 +207,23 @@ $$
 
 设 $f(x) = 2x$，$f'(x) = 2$：
 
-$$
+```math
 \left(e^{2x}\right)' = e^{2x} \cdot 2 = 2e^{2x}
-$$
+```
 
 ### 例子 2：$\left(e^{-x^2}\right)'$（高斯函数）
 
 设 $f(x) = -x^2$，$f'(x) = -2x$：
 
-$$
+```math
 \left(e^{-x^2}\right)' = e^{-x^2} \cdot (-2x) = -2x \cdot e^{-x^2}
-$$
+```
 
 ### 例子 3：$\left(\ln(x^2+1)\right)'$
 
-$$
+```math
 \left(\ln(x^2+1)\right)' = \frac{(x^2+1)'}{x^2+1} = \frac{2x}{x^2+1}
-$$
+```
 
 ---
 
