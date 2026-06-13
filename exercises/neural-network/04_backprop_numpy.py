@@ -32,10 +32,10 @@
 
   从后往前一层一层算:
     dL/dz   = y_hat - y                  # (sigmoid + BCE 化简的"魔法"结果, 干净到不像话)
-    dL/dW2  = (dL/dz) · h.T              # 链式: L → z → W2
-    dL/db2  = dL/dz                      # 链式: L → z → b2
-    dL/dh   = W2.T · (dL/dz)             # 把误差"反传"到隐藏层
-    dL/dh_pre = dL/dh * relu'(h_pre)     # 穿过 ReLU 激活 (逐元素相乘)
+    dL/dW2  = (dL/dz) · h.T              # 链式: L → z → W2 ( = dL/dz · dz/dw2 = dL/dz · h)
+    dL/db2  = dL/dz                      # 链式: L → z → b2 ( = dL/dz · dz/db2 = dL/dz)
+    dL/dh   = W2.T · (dL/dz)             # 把误差"反传"到隐藏层 ( = dL/dz · dz/dh = dL/dz · W2)
+    dL/dh_pre = dL/dh * relu'(h_pre)     # 穿过 ReLU 激活 (逐元素相乘) = (dL/dh · dh/d(h_pre))
     dL/dW1  = (dL/dh_pre) · x.T          # 链式: 一路传到 W1
     dL/db1  = dL/dh_pre
 
