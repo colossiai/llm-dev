@@ -13,11 +13,11 @@
 
     forward                                  backward (链式法则)
     --------                                 -------------------
-    (1) y_pred[i] = w · x[i] + b             ← dL/dw   = Σ dL/dy_pred[i] · x[i]
-                                             ← dL/db   = Σ dL/dy_pred[i] · 1
-    (2) r[i]      = y_pred[i] - y[i]         ← dL/dy_pred[i] = dL/dr[i] · 1
-    (3) sq[i]     = r[i]²                    ← dL/dr[i]      = dL/dsq[i] · 2·r[i]
-    (4) loss      = (1/N) · Σ sq[i]          ← dL/dsq[i]     = 1/N
+    (1) y_pred[i] = w · x[i] + b             ← dL/dw   = Σ ( dL/d(y_pred[i]) ·  d(y_pred[i])/d(w) ) = Σ dL/dy_pred[i] · x[i]
+                                             ← dL/d(b)   = Σ ( dL/d(y_pred[i]) ·  d(y_pred[i])/d(b) ) = Σ dL/d(y_pred[i]) · 1
+    (2) r[i]      = y_pred[i] - y[i]         ← dL/d(y_pred[i]) = dL/d(r[i]) · d(r[i])/d(y_pred[i]) = dL/d(r[i]) · 1
+    (3) sq[i]     = r[i]²                    ← dL/d(r[i])      = dL/d(sq[i]) · d(sp[i])/d(r[i]) = dL/dsq[i] · 2·r[i]
+    (4) loss      = (1/N) · Σ sq[i]          ← dL/d(sq[i])     = 1/N
 
 把 (4)→(3)→(2)→(1) 串起来化简, 就得到我们之前那两条手算公式:
     ∂loss/∂w = (2/N) · Σ x[i] · r[i]  = 2 · mean(x · r)
@@ -36,6 +36,104 @@ plt.rcParams["font.sans-serif"] = ["PingFang SC", "Hiragino Sans GB", "Arial Uni
 plt.rcParams["axes.unicode_minus"] = False
 
 
+def plot_computation_graph(savepath="03_computation_graph_forward_backward.png"):
+    """画 forward/backward 计算图: 上排蓝色 = 前向; 下排红色 = 反向 (链式法则)。
+    两排节点一一对应: 上面的 y_pred 对应下面的 dL/dy_pred, 一目了然。
+    """
+    fig, ax = plt.subplots(figsize=(16, 8.5))
+    ax.set_xlim(0, 16)
+    ax.set_ylim(0, 8.5)
+    ax.axis("off")
+
+    BLUE = "#1f77b4"
+    RED = "#d62728"
+
+    # ---- 上排 forward 节点 (y=5.8) ----
+    y_f = 5.8
+    fwd_nodes = [
+        (1.5,  "w, b",   "lightblue"),
+        (5,    "y_pred", "white"),
+        (8,    "r",      "white"),
+        (11,   "sq",     "white"),
+        (14,   "loss",   "lightgreen"),
+    ]
+    fwd_edges = [  # (x1, x2, 操作说明)
+        (1.5, 5,    "(1) y_pred = w·x + b"),
+        (5,   8,    "(2) r = y_pred - y"),
+        (8,   11,   "(3) sq = r·r"),
+        (11,  14,   "(4) loss = mean(sq)"),
+    ]
+
+    # ---- 下排 backward 节点 (y=2.2), 与上排一一对应 ----
+    y_b = 2.2
+    bwd_nodes = [
+        (1.5,  "dL/dw\ndL/db",  "lightcoral"),
+        (5,    "dL/dy_pred",    "mistyrose"),
+        (8,    "dL/dr",         "mistyrose"),
+        (11,   "dL/dsq",        "mistyrose"),
+        (14,   "dL/dloss = 1",  "lightyellow"),
+    ]
+    bwd_edges = [  # (x1, x2, 链式法则的局部导数)
+        (14, 11, "· 1/N"),
+        (11, 8,  "· 2·r"),
+        (8,  5,  "· 1"),
+        (5,  1.5, "对 w: · x[i] 后求和\n对 b: · 1     后求和"),
+    ]
+
+    def draw_node(x, y, label, color):
+        n_lines = label.count("\n") + 1
+        h = 0.55 + 0.32 * (n_lines - 1)
+        ax.add_patch(plt.Rectangle((x - 1, y - h / 2), 2, h,
+                                   facecolor=color, edgecolor="black", lw=1.5, zorder=3))
+        ax.text(x, y, label, ha="center", va="center",
+                fontsize=11, fontweight="bold", zorder=4)
+
+    for x, lbl, col in fwd_nodes:
+        draw_node(x, y_f, lbl, col)
+    for x, lbl, col in bwd_nodes:
+        draw_node(x, y_b, lbl, col)
+
+    # forward 箭头: 向右, 蓝色
+    for x1, x2, lbl in fwd_edges:
+        ax.annotate("", xy=(x2 - 1.05, y_f), xytext=(x1 + 1.05, y_f),
+                    arrowprops=dict(arrowstyle="->", color=BLUE, lw=2.5))
+        ax.text((x1 + x2) / 2, y_f + 0.55, lbl, color=BLUE, fontsize=10.5,
+                ha="center", fontweight="bold",
+                bbox=dict(boxstyle="round,pad=0.25", facecolor="white", edgecolor=BLUE))
+
+    # backward 箭头: 向左, 红色
+    for x1, x2, lbl in bwd_edges:
+        ax.annotate("", xy=(x2 + 1.05, y_b), xytext=(x1 - 1.05, y_b),
+                    arrowprops=dict(arrowstyle="->", color=RED, lw=2.5))
+        ax.text((x1 + x2) / 2, y_b - 0.75, lbl, color=RED, fontsize=10,
+                ha="center",
+                bbox=dict(boxstyle="round,pad=0.25", facecolor="white", edgecolor=RED))
+
+    # forward → backward 的"种子": loss 这一列向下接 dL/dloss=1
+    ax.annotate("", xy=(14, y_b + 0.45), xytext=(14, y_f - 0.45),
+                arrowprops=dict(arrowstyle="->", color="black", lw=2, linestyle="dashed"))
+    ax.text(14.7, (y_f + y_b) / 2, "种子\ndL/dloss = 1",
+            fontsize=10, va="center", ha="left")
+
+    # 上下层的"对照虚线" — 提示同一个变量, 前向值 vs 反向梯度
+    for (x, _, _), (xb, _, _) in zip(fwd_nodes, bwd_nodes):
+        if x == 14:  # loss 这列已经画过实线了
+            continue
+        ax.plot([x, xb], [y_f - 0.45, y_b + 0.45], color="gray",
+                lw=0.8, linestyle=":", alpha=0.5, zorder=1)
+
+    # 标题 + 说明
+    ax.text(8, 7.9, "Forward (前向): 顺着蓝箭头, 从 (w, b) 一路算到 loss",
+            fontsize=14, ha="center", color=BLUE, fontweight="bold")
+    ax.text(8, 0.5,
+            "Backward (反向): 从 dL/dloss=1 出发, 沿红箭头依次乘上每一步的局部导数, 把梯度传回每个变量",
+            fontsize=12, ha="center", color=RED, fontweight="bold")
+
+    plt.tight_layout()
+    plt.savefig(savepath, dpi=120, bbox_inches="tight")
+    print(f"计算图已保存到 {savepath}")
+
+
 def forward(w, b, x_data, y_data):
     """前向: 一路算到 loss, 同时把中间量 (y_pred, r) 记下来, 反向时要用。"""
     y_pred = w * x_data + b           # (1)
@@ -52,13 +150,19 @@ def backward(cache, x_data):
     N = x_data.numel()
 
     # (4) loss = mean(sq)         →  dL/dsq[i] = 1/N
-    dsq = torch.full_like(r, 1.0 / N)
+    dsq = torch.full_like(r, 1.0 / N) # full_like 创建一个与已有 Tensor 形状相同的新 Tensor，并用指定值填充。
 
     # (3) sq[i] = r[i]²           →  dL/dr[i] = dL/dsq[i] · 2·r[i]
     dr = dsq * 2.0 * r
 
     # (2) r[i] = y_pred[i] - y[i] →  dL/dy_pred[i] = dL/dr[i] · 1
     dy_pred = dr
+
+# 把 (4)→(3)→(2)→(1) 串起来化简, 就得到我们之前那两条手算公式:
+#     ∂loss/∂w = (2/N) · Σ x[i] · r[i]  = 2 · mean(x · r)
+#     ∂loss/∂b = (2/N) · Σ      r[i]    = 2 · mean(r)
+# 其中 r = y_pred - y_data 是残差。
+
 
     # (1) y_pred[i] = w·x[i] + b  →  对 w 累加 x[i], 对 b 累加 1
     dw = (dy_pred * x_data).sum()
@@ -70,6 +174,11 @@ def main():
     torch.manual_seed(0)
     x_data = torch.linspace(-2, 2, 50)
     y_data = 2 * x_data + 1 + 0.1 * torch.randn_like(x_data)
+
+    # =========================================================
+    # 0a. 先把 forward / backward 的计算图画出来, 对照后面的代码看
+    # =========================================================
+    plot_computation_graph()
 
     # =========================================================
     # 0. 先验证一下: 手算 backward 和 autograd 的结果是否一致
