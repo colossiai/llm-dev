@@ -18,6 +18,21 @@
 
 ---
 
+## 图解详细流程(逐脚本拆解)
+
+每个脚本配一份 `NN_process.md` 图解文档:用 ASCII 数据流图 + shape 变化 + 表格对比 + 一句话总结,把对应脚本从输入到输出的每一步讲穿。建议**先读脚本注释,再对照图解**。
+
+| # | 图解文档 | 核心看点 |
+|---|---------|---------|
+| 01 | [`01_process.md`](01_process.md) | 查表得 X → Q/K/V 投影 → 打分+softmax → 加权 V,四步看 shape |
+| 02 | [`02_process.md`](02_process.md) | 因果掩码怎么造(`tril`)、怎么用(softmax 前 `masked_fill` 填 `-inf`)、为什么用 -inf 不用 0 |
+| 03 | [`03_process.md`](03_process.md) | 拆头/合头的 `view+transpose` 重排;多头靠"塞进 batch 维"并行、头数不增参数 |
+| 04 | [`04_process.md`](04_process.md) | FFN / 残差 / LayerNorm 三零件;Pre-Norm vs Post-Norm;GPT-3 175B 参数怎么算 |
+| 05 | [`05_process.md`](05_process.md) | 完整 GPT 五段数据流;每个位置都出预测;自回归生成机制 |
+| 06 | [`06_process.md`](06_process.md) | 字符级分词、错位标签(右移一位)、训练四步循环、温度采样生成 |
+
+---
+
 ## 输入设计(每个脚本如何造输入张量)
 
 不同脚本根据**教学重点**选择不同的输入方式 — 是否要把 `tokens` 标签和输入张量真正"关联"起来。
