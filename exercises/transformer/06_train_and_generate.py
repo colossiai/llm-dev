@@ -36,12 +36,16 @@
   这就证明:**Transformer + Cross-Entropy + Adam = 真的能学语言模式**。
 """
 
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
 import common
+
+CKPT_DIR = Path(__file__).parent / "checkpoints"
 
 
 # ============================================================
@@ -140,9 +144,12 @@ class MiniGPT(nn.Module):
 
 
 def main():
-    args = common.parse_args(lambda p: p.add_argument(
-        "--epochs", type=int, default=3000, help="训练 step 数"
-    ))
+    def add_args(p):
+        p.add_argument("--epochs", type=int, default=3000, help="训练 step 数")
+        p.add_argument("--save_model", action="store_true",
+                       help="把训好的模型保存到 checkpoints/ 子目录")
+
+    args = common.parse_args(add_args)
     torch.manual_seed(42)
 
     # =========================================================
@@ -245,7 +252,42 @@ def main():
         print(f"续写: '{generated_text}'")
 
     # =========================================================
-    # 6. 画 loss 曲线
+    # 6. 保存模型到磁盘
+    # =========================================================
+    # 注意: 只存 model 本身不够 — 重新加载时还需要知道模型怎么搭 (config)
+    # 以及字符↔id 的映射 (vocab), 否则没法 encode/decode。
+    # 所以把三样东西打包成一个自包含的 checkpoint。
+    if args.save_model:
+        CKPT_DIR.mkdir(exist_ok=True)
+        ckpt_path = CKPT_DIR / "06_minigpt.pt"
+        torch.save(
+            {
+                "model_state": model.state_dict(),          # 学到的权重 (核心)
+                "config": {                                  # 怎么重建模型骨架
+                    "vocab_size": vocab_size,
+                    "d_model": d_model,
+                    "n_layers": n_layers,
+                    "n_heads": n_heads,
+                    "max_seq_len": max_seq_len,
+                },
+                "vocab": {                                   # 字符 ↔ id 映射
+                    "char_to_id": char_to_id,
+                    "id_to_char": id_to_char,
+                },
+                "final_loss": losses[-1],
+            },
+            ckpt_path,
+        )
+        print(f"\n模型已保存到 {ckpt_path}")
+        print("  重新加载示例:")
+        print("    ckpt = torch.load(path)")
+        print("    model = MiniGPT(**ckpt['config'])")
+        print("    model.load_state_dict(ckpt['model_state'])")
+    else:
+        print("\n(未保存模型。加 --save_model 保存到 checkpoints/)")
+
+    # =========================================================
+    # 7. 画 loss 曲线
     # =========================================================
     if args.draw:
         fig, ax = plt.subplots(figsize=(10, 5))

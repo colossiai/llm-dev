@@ -15,6 +15,7 @@
 | 04 | `04_transformer_block.py` | 完整 Block: MHA + FFN + Residual + LN | 6 层激活分布稳定性 |
 | 05 | `05_mini_gpt.py` | 完整 GPT 架构(无训练) | 213K 参数模型, 形状验证 |
 | 06 | `06_train_and_generate.py` | 真实训练 + 自回归生成 | **从 prompt 续写正确句子** |
+| 07 | `07_inspect_and_use_checkpoint.py` | 读取 checkpoint:查看内容 + 加载续写 | 不重训直接复用已存模型 |
 
 ---
 
@@ -83,11 +84,36 @@ for s in transformer/0*.py; do
 done
 ```
 
-06 还支持自定义训练步数:
+06 还支持自定义训练步数,以及把训好的模型存到磁盘:
 
 ```bash
+# 自定义训练步数
 uv run python transformer/06_train_and_generate.py --save --epochs 5000
+
+# 训练后保存模型到 transformer/checkpoints/06_minigpt.pt
+uv run python transformer/06_train_and_generate.py --save_model
 ```
+
+`--save_model` 存的是一个**自包含 checkpoint**(一个 dict):
+`model_state`(权重)+ `config`(模型骨架超参)+ `vocab`(字符↔id 映射)+ `final_loss`。
+单存权重不够 — 重建模型需要 config,做 encode/decode 需要 vocab。
+
+07 读取这个 checkpoint:先打印内容(keys / config / 权重形状 / 参数量),
+再三步把它变回能跑的模型(`MiniGPT(**config)` → `load_state_dict` → `eval`),
+最后用 `vocab` 续写 —— **不用重新训练**:
+
+```bash
+# 先训练并保存, 再读取复用
+uv run python transformer/06_train_and_generate.py --save_model
+uv run python transformer/07_inspect_and_use_checkpoint.py
+
+# 也可指定别的 checkpoint 路径
+uv run python transformer/07_inspect_and_use_checkpoint.py --ckpt path/to/xxx.pt
+```
+
+> 坑提示:PyTorch 2.6+ 的 `torch.load` 默认 `weights_only=True`,只收纯张量。
+> 我们的 checkpoint 含 config/vocab 这类 dict,需显式 `weights_only=False`
+> (仅对自己生成的可信文件这么做)。
 
 ---
 
@@ -144,7 +170,7 @@ Prompt: 'how v'
 
 ## 下一步学什么?
 
-学完这 6 个脚本你已经掌握 LLM 的核心机制。如果想继续深入:
+学完这 7 个脚本你已经掌握 LLM 的核心机制。如果想继续深入:
 
 | 主题 | 推荐资源 |
 |------|---------|
