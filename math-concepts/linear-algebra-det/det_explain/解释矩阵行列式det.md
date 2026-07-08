@@ -10,13 +10,13 @@
 
 假设有一个矩阵
 
-[
+```math
 A=
 \begin{bmatrix}
-a&b\
+a&b\\
 c&d
 \end{bmatrix}
-]
+```
 
 它对应一个二维线性变换。
 
@@ -40,15 +40,15 @@ c&d
 
 这个平行四边形的面积就是
 
-[
+```math
 |ad-bc|
-]
+```
 
 因此
 
-[
+```math
 \boxed{\det(A)=ad-bc}
-]
+```
 
 表示：
 
@@ -56,13 +56,13 @@ c&d
 
 例如
 
-[
+```math
 A=
 \begin{bmatrix}
-2&0\
+2&0\\
 0&3
 \end{bmatrix}
-]
+```
 
 变换后
 
@@ -71,15 +71,15 @@ A=
 
 面积变成
 
-[
+```math
 2\times3=6
-]
+```
 
 因为
 
-[
+```math
 \det(A)=2\times3=6
-]
+```
 
 ---
 
@@ -87,13 +87,13 @@ A=
 
 看这个矩阵
 
-[
+```math
 A=
 \begin{bmatrix}
--1&0\
+-1&0\\
 0&1
 \end{bmatrix}
-]
+```
 
 它表示
 
@@ -122,9 +122,9 @@ A=
 
 计算
 
-[
+```math
 \det(A)=(-1)\times1=-1
-]
+```
 
 负号说明：
 
@@ -141,13 +141,13 @@ A=
 
 来看
 
-[
+```math
 A=
 \begin{bmatrix}
-1&2\
+1&2\\
 2&4
 \end{bmatrix}
-]
+```
 
 第二列就是第一列的两倍。
 
@@ -170,9 +170,9 @@ A=
 
 所以
 
-[
+```math
 \det(A)=1\times4-2\times2=0
-]
+```
 
 这意味着：
 
@@ -186,11 +186,11 @@ A=
 
 所以
 
-[
+```math
 \boxed{\det(A)=0
 \Longleftrightarrow
 A\text{不可逆}}
-]
+```
 
 这是线性代数最重要的结论之一。
 
@@ -200,9 +200,9 @@ A\text{不可逆}}
 
 对于
 
-[
+```math
 3\times3
-]
+```
 
 矩阵，
 
@@ -219,32 +219,32 @@ A\text{不可逆}}
 
 它的体积就是
 
-[
+```math
 |\det(A)|
-]
+```
 
 例如
 
-[
+```math
 A=
 \begin{bmatrix}
-2&0&0\
-0&3&0\
+2&0&0\\
+0&3&0\\
 0&0&4
 \end{bmatrix}
-]
+```
 
 体积
 
-[
+```math
 2\times3\times4=24
-]
+```
 
 所以
 
-[
+```math
 \det(A)=24
-]
+```
 
 ---
 
@@ -272,32 +272,32 @@ A=
 
 如果矩阵的特征值是
 
-[
+```math
 \lambda_1,\lambda_2,\cdots,\lambda_n
-]
+```
 
 那么
 
-[
+```math
 \boxed{
 \det(A)=
 \lambda_1\lambda_2\cdots\lambda_n
 }
-]
+```
 
 例如
 
 特征值
 
-[
+```math
 2,;3
-]
+```
 
 那么
 
-[
+```math
 \det=6
-]
+```
 
 这很好理解：
 
@@ -309,23 +309,23 @@ A=
 
 若
 
-[
+```math
 \det(A)\neq0
-]
+```
 
 则一定存在逆矩阵
 
-[
+```math
 A^{-1}
-]
+```
 
 因为没有任何方向被压扁。
 
 如果
 
-[
+```math
 \det(A)=0
-]
+```
 
 说明至少有一个方向被压缩到了 0。
 
@@ -353,29 +353,29 @@ A^{-1}
 
 对于
 
-[
+```math
 A=
 \begin{bmatrix}
-a&b\
+a&b\\
 c&d
 \end{bmatrix}
-]
+```
 
 两列向量分别是
 
-[
+```math
 (a,c),
 \qquad
 (b,d)
-]
+```
 
 它们围成一个平行四边形。
 
 几何证明可以得到面积就是
 
-[
+```math
 ad-bc
-]
+```
 
 其中：
 
