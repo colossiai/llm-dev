@@ -30,13 +30,29 @@ uv run --project ../../../exercises python 01_no_causal_mask.py --epochs 2000
 
 ## 案例索引
 
+分两类:**显性 bug**(现象一眼可见)和**隐性 bug**(在这个"背一小段"的玩具任务上现象很弱甚至看不出 —— 这本身是关键一课,见下)。
+
+### 显性 bug(现象明显)
+
 | 文件 | 注入的 bug | 招牌现象(先别看,先猜) |
 |---|---|---|
 | `01_no_causal_mask.py` | 去掉因果 mask(偷看未来) | train loss 假性极低,但生成崩坏 —— data leakage |
 | `02_targets_not_shifted.py` | x/y 不错位(target = input) | loss 秒到 ~0,但生成只会复读(学成"抄写") |
-| `03_forgot_zero_grad.py` | 忘记 `optimizer.zero_grad()` | 梯度跨步累积,loss 抖动 / 收敛更差 |
+| `03_forgot_zero_grad.py` | 忘记 `optimizer.zero_grad()` | 梯度跨步累积,loss 抖动 / 收敛更差 / 发散 |
 | `04_lr_too_high.py` | 学习率过大(lr=10.0) | loss 不降反升,剧烈震荡并爆炸到成百上千 |
 | `05_forgot_optimizer_step.py` | 忘记 `optimizer.step()` | 不报错,但 loss 全程平线(参数从没更新) |
+| `06_lr_too_low.py` | 学习率过小(lr=1e-6) | loss 缓慢但确实在降(和 05 的"纯噪声平线"对比看趋势) |
+| `09_bad_weight_init.py` | 权重初始化过大(std=1.0) | 初始 loss 巨大(~15),训练不稳,收敛差、生成乱码 |
+
+### 隐性 bug(玩具任务上现象很弱 —— 反而是最值得体会的一课)
+
+| 文件 | 注入的 bug | 实测现象(和直觉相反) |
+|---|---|---|
+| `07_softmax_wrong_dim.py` | softmax 沿错误维度(dim=-2) | train loss 照样降甚至更低(陷阱!),但**生成**明显错乱 |
+| `08_forgot_sqrt_scale.py` | 忘记 1/√d 缩放 | head_dim=16 时几乎无差别;head_dim 越大才越致命 |
+| `10_no_positional_embedding.py` | 不加位置编码 | loss/生成几乎不受影响;顺序更关键的真实数据上才会崩 |
+
+> **隐性 bug 的共同教训**:小数据 + 过拟合会**掩盖架构 bug** —— train loss 好看 ≠ 架构对。这类 bug 要在更大 head_dim / 更长更难的数据 / 验证集上才暴露。别用"背绕口令"的实验去否定 √d 缩放、位置编码的必要性。
 
 ## 文件说明
 
@@ -44,4 +60,4 @@ uv run --project ../../../exercises python 01_no_causal_mask.py --epochs 2000
 
 ## 想继续加案例?
 
-`shared.train()` 已经把几个"正确行为"做成开关(`zero_grad` / `shift_targets` / `do_step` / `lr`)。想加新 bug(如 LR 太小、softmax 维度错、忘记 √d 缩放、权重初始化过大),照 01~05 的模板新建 `06_xxx.py` 即可 —— 大多只需再多一个开关或一个子类。
+`shared.py` 已把常见"正确行为"做成开关或可替换点:`train()` 的 `zero_grad` / `shift_targets` / `do_step` / `lr`,`build_model()` 的 `attn_cls`(替换注意力实现)/ `use_pos_emb`。照现有模板新建 `11_xxx.py` 即可 —— 大多只需再多一个开关、一个注意力子类,或在 main 里对模型做一处改动(参考 09 的 `blow_up_init`)。

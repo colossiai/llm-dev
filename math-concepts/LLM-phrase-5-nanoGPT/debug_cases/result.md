@@ -81,3 +81,62 @@ prompt 'how v' → 🐞 buggy: 'how vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv'
 
 1. **案例 04:`lr` 1.0 → 10.0**。实测 AdamW 归一化梯度,低 lr 不会 NaN;改用诚实的「loss 爆炸/发散」现象,并在答案里补了「Adam 为何通常不直接 nan」的小知识。
 2. **案例 05 用「忘记 `optimizer.step()`」而非「no_grad 包住 loss」**。后者会让 `backward()` 直接 RuntimeError(崩溃),给不出「loss 平线」;忘记 step 才能干净演示「不报错但参数冻结」。no_grad/detach 作为同族变体在 docstring 里点到。
+
+---
+
+# 补充:案例 06–10 实测结果
+
+补齐到 ~10 个案例。以下为 `--epochs 600` 实测(06 为 `--epochs 800`)。**重要发现:07/08/10 的现象和直觉相反 —— 玩具任务的过拟合会掩盖架构 bug。**
+
+## 结果总览
+
+| 案例 | 类型 | buggy 现象(实跑) |
+|---|---|---|
+| 06 lr 太小(1e-6) | 显性 | loss 从 3.47 缓慢降到 3.36,有明确下降趋势(对比 05 的纯噪声平线) |
+| 07 softmax 维度错(dim=-2) | 隐性 | train loss 甚至更低 `0.049` vs `0.088`(陷阱),但生成错乱 |
+| 08 忘记 √d 缩放 | 隐性 | head_dim=16 时几乎无差别 `0.088` vs `0.088`;head_dim=64 才变差 `0.168` vs `0.089` |
+| 09 权重初始化过大(std=1.0) | 显性 | 初始 loss `15.1`,收敛到 `2.04` vs `0.088`,生成乱码 |
+| 10 忘记位置编码 | 隐性 | loss `0.089` vs `0.088`,生成照样正常 —— 玩具任务掩盖了 bug |
+
+## 关键 loss / 生成节选
+
+### 06 lr 太小(--epochs 800)
+```
+   step |    ✅ 正确 loss |  🐞 buggy loss
+      0 |       3.4735 |        3.4735
+    399 |       0.0889 |        3.4262
+    799 |       0.0689 |        3.3582   ← 缓慢下降(3.47→3.36), 与 05 死平不同
+```
+
+### 07 softmax 维度错(dim=-2)
+```
+  final |       0.0879 |        0.0493   ← buggy train loss 反而更低(陷阱)
+生成 'the q' → ✅ 'the quick brown fox...'  /  🐞 'the quorsps the bowxrs jth five...'
+```
+
+### 08 忘记 √d 缩放
+```
+  final |       0.0879 |        0.0876   ← head_dim=16 几乎无差别
+探针: n_heads=1(head_dim=64) → correct=0.089  noscale=0.168  ← 大 head_dim 才暴露
+生成: correct 与 buggy 几乎一样好
+```
+
+### 09 权重初始化过大(std=1.0)
+```
+   step |    ✅ 正确 loss |  🐞 buggy loss
+      0 |       3.4735 |       15.1398   ← 初始就爆高
+    599 |       0.0879 |        2.0409   ← 收敛差一大截
+生成 'the q' → 🐞 'the q d dioiigiia bixiauicjueec...'(乱码)
+```
+
+### 10 忘记位置编码
+```
+  final |       0.0879 |        0.0890   ← 几乎无差别
+生成 'the q' → ✅ 'the quick brown fox...'  /  🐞 'the quick brown fox...'(照样正常)
+```
+
+## 补充案例的两处诚实修正(实测推翻了初版答案)
+
+1. **07/10 现象与初版答案相反**:初版写"loss 高、生成乱";实测 buggy 的 **train loss 照样低甚至更低**。已改写答案:07 的问题只暴露在**生成**;10 在这个玩具任务上**根本看不出**。
+2. **08 在 head_dim=16 时无现象**:已实测确认 head_dim 增大(=64)才明显变差,答案里给了复现方法(改 n_heads=1)。
+3. 三者归纳出一条贯穿的元教训并写进 README:**小数据过拟合会掩盖架构 bug,train loss 好看 ≠ 架构对**。

@@ -90,9 +90,10 @@ class TransformerBlock(nn.Module):
 
 class MiniGPT(nn.Module):
     def __init__(self, vocab_size, d_model, n_layers, n_heads, max_seq_len,
-                 attn_cls=MultiHeadCausalSelfAttention):
+                 attn_cls=MultiHeadCausalSelfAttention, use_pos_emb=True):
         super().__init__()
         self.max_seq_len = max_seq_len
+        self.use_pos_emb = use_pos_emb        # False → 10号bug: 不加位置编码
         self.tok_emb = nn.Embedding(vocab_size, d_model)
         self.pos_emb = nn.Embedding(max_seq_len, d_model)
         self.blocks = nn.ModuleList([
@@ -105,8 +106,11 @@ class MiniGPT(nn.Module):
     def forward(self, idx):
         B, T = idx.shape
         tok = self.tok_emb(idx)
-        pos = self.pos_emb(torch.arange(T, device=idx.device))
-        x = tok + pos
+        if self.use_pos_emb:
+            pos = self.pos_emb(torch.arange(T, device=idx.device))
+            x = tok + pos
+        else:
+            x = tok                           # 🐞 10号bug: 丢掉位置信息
         for block in self.blocks:
             x = block(x)
         x = self.ln_f(x)
@@ -157,8 +161,9 @@ def set_seed(seed=SEED):
     torch.manual_seed(seed)
 
 
-def build_model(vocab_size, attn_cls=MultiHeadCausalSelfAttention):
-    return MiniGPT(vocab_size, D_MODEL, N_LAYERS, N_HEADS, MAX_SEQ_LEN, attn_cls=attn_cls)
+def build_model(vocab_size, attn_cls=MultiHeadCausalSelfAttention, **kwargs):
+    return MiniGPT(vocab_size, D_MODEL, N_LAYERS, N_HEADS, MAX_SEQ_LEN,
+                   attn_cls=attn_cls, **kwargs)
 
 
 def get_batch(data, batch_size, max_seq_len, shift_targets=True):
